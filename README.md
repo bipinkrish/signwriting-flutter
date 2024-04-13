@@ -1,10 +1,17 @@
-# SignWriting
+# SignWriting Flutter
 
 [![pub package](https://img.shields.io/pub/v/signwriting_flutter.svg)](https://pub.dev/packages/signwriting_flutter)
 
-This is dart implementation of its [python counterpart](https://github.com/sign-language-processing/signwriting). Dart utilities for SignWriting formats, tokenizer, visualizer and utils.
+This is flutter implementation of its [python counterpart](https://github.com/sign-language-processing/signwriting). flutter utilities for SignWriting formats, tokenizer, visualizer and utils.
 
 Most of the implementation is done at [signwriting](https://pub.dev/packages/signwriting)
+
+## How to use
+
+```yaml
+dependencies:
+  signwriting_flutter: ^latest_version
+```
 
 ## Example
 

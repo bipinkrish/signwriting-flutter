@@ -1,6 +1,6 @@
 name: signwriting_flutter
 description: "Flutter utilities for SignWriting formats, tokenizer and visualizer."
-version: 1.0.1
+version: 1.0.2
 repository: https://github.com/bipinkrish/signwriting-flutter
 topics:
   - sign
