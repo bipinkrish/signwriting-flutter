@@ -4,21 +4,26 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:signwriting/signwriting.dart';
 
+// Styles for the SignWriting fonts
+const signWritingLinelFamily = TextStyle(
+  fontFamily: 'SuttonSignWritingLine',
+);
+
+const signWritingFillFamily = TextStyle(
+  fontFamily: 'SuttonSignWritingFill',
+);
+
 // Function to calculate the size of a symbol based on its representation
-Size _getSymbolSize(String symbol) {
+Size _getSymbolSize(String symbol, double fontSize) {
   // Getting the line representation of the symbol
   final lineId = symbolLine(key2id(symbol));
-
-  // Defining the font size
-  const fontSize = 30.0;
 
   // Creating a TextPainter to measure the size of the symbol
   final paint = TextPainter(
     textDirection: TextDirection.ltr,
     text: TextSpan(
       text: lineId,
-      style: const TextStyle(
-        fontFamily: 'SuttonSignWritingLine',
+      style: signWritingLinelFamily.copyWith(
         fontSize: fontSize,
       ),
     ),
@@ -36,6 +41,7 @@ Size _getSymbolSize(String symbol) {
 ///
 /// Parameters:
 ///   - fsw: The SignWriting FSW string representing the sign to be converted into an image.
+///   - size: The size of the symbols in the SignWriting image. Defaults to 30.0.
 ///   - trustBox: Whether to trust the bounding box provided by the SignWriting FSW data.
 ///               If true, the function uses the bounding box information provided by the FSW data.
 ///               If false, the function calculates the bounding box based on the symbols' positions.
@@ -50,6 +56,7 @@ Size _getSymbolSize(String symbol) {
 Future<Uint8List> signwritingToImage(
   String fsw, {
   bool trustBox = true,
+  double size = 30.0,
   Color lineColor = Colors.black,
   Color fillColor = Colors.transparent,
 }) async {
@@ -76,8 +83,8 @@ Future<Uint8List> signwritingToImage(
     for (final symbol in sign.symbols) {
       final symbolX = symbol.position.item1.toDouble();
       final symbolY = symbol.position.item2.toDouble();
-      final symbolWidth = _getSymbolSize(symbol.symbol).width;
-      final symbolHeight = _getSymbolSize(symbol.symbol).height;
+      final symbolWidth = _getSymbolSize(symbol.symbol, size).width;
+      final symbolHeight = _getSymbolSize(symbol.symbol, size).height;
 
       maxX = max(maxX, symbolX + symbolWidth);
       maxY = max(maxY, symbolY + symbolHeight);
@@ -106,18 +113,16 @@ Future<Uint8List> signwritingToImage(
 
     fillPainter.text = TextSpan(
       text: symbolFill(symbolId),
-      style: TextStyle(
-        fontFamily: 'SuttonSignWritingFill',
-        fontSize: 30.0,
+      style: signWritingFillFamily.copyWith(
+        fontSize: size,
         color: fillColor,
       ),
     );
 
     linePainter.text = TextSpan(
       text: symbolLine(symbolId),
-      style: TextStyle(
-        fontFamily: 'SuttonSignWritingLine',
-        fontSize: 30.0,
+      style: signWritingLinelFamily.copyWith(
+        fontSize: size,
         color: lineColor,
       ),
     );
