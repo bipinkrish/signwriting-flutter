@@ -1,6 +1,6 @@
 name: signwriting_flutter
 description: "Flutter utilities for SignWriting formats, tokenizer and visualizer."
-version: 1.0.3
+version: 1.0.4
 repository: https://github.com/bipinkrish/signwriting-flutter
 topics:
   - sign
@@ -19,13 +19,3 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
-
-flutter:
-  fonts:
-    - family: SuttonSignWritingFill
-      fonts:
-        - asset: assets/SuttonSignWritingFill.ttf
-
-    - family: SuttonSignWritingLine
-      fonts:
-        - asset: assets/SuttonSignWritingLine.ttf

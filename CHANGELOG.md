@@ -13,3 +13,7 @@
 ## 1.0.3
 
 * Refactor
+
+## 1.0.4
+
+* Removed Assets from PUB

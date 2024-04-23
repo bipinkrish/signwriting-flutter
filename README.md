@@ -8,9 +8,23 @@ Most of the implementation is done at [signwriting](https://pub.dev/packages/sig
 
 ## How to use
 
+Download both the font files from [assets/fonts](https://github.com/bipinkrish/signwriting-flutter/tree/main/assets/fonts) and place them in the `assets/fonts` directory from your project's root folder.
+
 ```yaml
 dependencies:
   signwriting_flutter: ^latest_version
+```
+
+```yaml
+flutter:
+  fonts:
+    - family: SuttonSignWritingFill
+      fonts:
+        - asset: assets/fonts/SuttonSignWritingFill.ttf
+
+    - family: SuttonSignWritingLine
+      fonts:
+        - asset: assets/fonts/SuttonSignWritingLine.ttf
 ```
 
 ## Example
