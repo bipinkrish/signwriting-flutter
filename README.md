@@ -104,3 +104,22 @@ class MyApp extends StatelessWidget {
 
 ![result](https://github.com/user-attachments/assets/43fc87d3-39a0-4f7b-915a-5be173bccf06)
 
+## More
+
+`signwritingToImage` also accepts SWU strings directly (auto-detected and converted):
+
+```dart
+signwritingToImage('𝠃𝤟𝤩񋛩𝣵𝤐񀀒𝤇𝣤');
+```
+
+Render and combine multiple signs with `signwritingsToImage`:
+
+```dart
+signwritingsToImage(
+  [signA, signB, signC],
+  direction: SignWritingLayout.horizontal, // or .vertical
+);
+```
+
+All pure [`signwriting`](https://pub.dev/packages/signwriting) utilities (formats, tokenizer, mirror, fingerspelling, mouthing, canonicalize, `getSymbolSize`, `signwritingBox`, …) are re-exported, so importing `signwriting_flutter` is enough.
+

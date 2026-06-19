@@ -1,6 +1,6 @@
 name: signwriting_flutter
 description: "Flutter utilities for SignWriting formats, tokenizer and visualizer."
-version: 1.0.4
+version: 1.1.0
 repository: https://github.com/bipinkrish/signwriting-flutter
 topics:
   - sign
@@ -13,7 +13,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  signwriting: ^1.2.1
+  signwriting: ^1.4.0
 
 dev_dependencies:
   flutter_test:

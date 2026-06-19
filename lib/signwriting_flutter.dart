@@ -4,98 +4,56 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:signwriting/signwriting.dart';
 
+// Re-export the pure-Dart utilities (formats, metrics, mirror, joins,
+// fingerspelling, mouthing, canonicalize) so a single import is enough.
+export 'package:signwriting/signwriting.dart';
+
 // Styles for the SignWriting fonts
-const signWritingLinelFamily = TextStyle(
-  fontFamily: 'SuttonSignWritingLine',
-);
+const signWritingLinelFamily = TextStyle(fontFamily: 'SuttonSignWritingLine');
 
-const signWritingFillFamily = TextStyle(
-  fontFamily: 'SuttonSignWritingFill',
-);
+const signWritingFillFamily = TextStyle(fontFamily: 'SuttonSignWritingFill');
 
-// Function to calculate the size of a symbol based on its representation
-Size _getSymbolSize(String symbol, double fontSize) {
-  // Getting the line representation of the symbol
-  final lineId = symbolLine(key2id(symbol));
+bool _isAscii(String s) => s.codeUnits.every((c) => c < 128);
 
-  // Creating a TextPainter to measure the size of the symbol
-  final paint = TextPainter(
-    textDirection: TextDirection.ltr,
-    text: TextSpan(
-      text: lineId,
-      style: signWritingLinelFamily.copyWith(
-        fontSize: fontSize,
-      ),
-    ),
-  );
-
-  // Layout the TextPainter to calculate the size
-  paint.layout();
-  return paint.size;
-}
-
-/// Converts a SignWriting FSW (Formal SignWriting) string into an image represented as Uint8List.
+/// Renders a single FSW (or SWU) sign to a [ui.Image].
 ///
-/// This function takes a SignWriting FSW string as input and generates an image representing the sign
-/// specified by the FSW string. The image is returned as a Uint8List containing the image data.
-///
-/// Parameters:
-///   - fsw: The SignWriting FSW string representing the sign to be converted into an image.
-///   - size: The size of the symbols in the SignWriting image. Defaults to 30.0.
-///   - trustBox: Whether to trust the bounding box provided by the SignWriting FSW data.
-///               If true, the function uses the bounding box information provided by the FSW data.
-///               If false, the function calculates the bounding box based on the symbols' positions.
-///               Defaults to true.
-///   - lineColor: The color of the lines in the SignWriting image.
-///                Defaults to Colors.black.
-///   - fillColor: The color of the fill in the SignWriting image.
-///                Defaults to Colors.transparent.
-///
-/// Returns:
-///   A Future<Uint8List> representing the image data in Uint8List format.
-Future<Uint8List> signwritingToImage(
+/// Returns a 1x1 transparent image for a sign with no symbols (matching the
+/// Python visualizer).
+Future<ui.Image> _renderSignImage(
   String fsw, {
   bool trustBox = true,
   double size = 30.0,
   Color lineColor = Colors.black,
   Color fillColor = Colors.transparent,
 }) async {
-  // Convert the FSW string to a Sign object
+  // Accept SWU input (swu2fsw is a no-op for ASCII FSW).
+  if (!_isAscii(fsw)) fsw = swu2fsw(fsw);
+
   final sign = fswToSign(fsw);
 
-  // If the sign has no symbols, return an empty Uint8List
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+
   if (sign.symbols.isEmpty) {
-    return Uint8List(0);
+    return recorder.endRecording().toImage(1, 1);
   }
 
-  // Calculate the minimum x and y coordinates of the sign symbols
-  final positions = sign.symbols.map((s) => s.position).toList();
-  final minX = positions.map((p) => p.item1.toDouble()).reduce(min);
-  final minY = positions.map((p) => p.item2.toDouble()).reduce(min);
+  // Minimum x/y across the sign's symbols.
+  final minX = sign.symbols.map((s) => s.position.item1).reduce(min);
+  final minY = sign.symbols.map((s) => s.position.item2).reduce(min);
 
-  // Calculate the maximum x and y coordinates of the sign symbols
-  double maxX, maxY;
+  // Bottom-right corner: the FSW box if trusted, else the tight box computed
+  // from the symbols' rendered sizes (matches Python's signwriting_box).
+  int maxX, maxY;
   if (trustBox) {
-    maxX = sign.box.position.item1.toDouble();
-    maxY = sign.box.position.item2.toDouble();
+    maxX = sign.box.position.item1;
+    maxY = sign.box.position.item2;
   } else {
-    maxX = maxY = 0;
-    for (final symbol in sign.symbols) {
-      final symbolX = symbol.position.item1.toDouble();
-      final symbolY = symbol.position.item2.toDouble();
-      final symbolWidth = _getSymbolSize(symbol.symbol, size).width;
-      final symbolHeight = _getSymbolSize(symbol.symbol, size).height;
-
-      maxX = max(maxX, symbolX + symbolWidth);
-      maxY = max(maxY, symbolY + symbolHeight);
-    }
+    final box = signwritingBox(sign);
+    maxX = box.item1;
+    maxY = box.item2;
   }
 
-  // Create a PictureRecorder to record drawing commands
-  final pictureRecorder = ui.PictureRecorder();
-  final canvas = Canvas(pictureRecorder);
-
-  // Create TextPainters for drawing the fill and line of each symbol
   final fillPainter = TextPainter(
     textDirection: TextDirection.ltr,
     textWidthBasis: TextWidthBasis.longestLine,
@@ -105,44 +63,137 @@ Future<Uint8List> signwritingToImage(
     textWidthBasis: TextWidthBasis.longestLine,
   );
 
-  // Draw each symbol onto the canvas
   for (final symbol in sign.symbols) {
-    final x = symbol.position.item1 - minX;
-    final y = symbol.position.item2 - minY;
+    final x = (symbol.position.item1 - minX).toDouble();
+    final y = (symbol.position.item2 - minY).toDouble();
     final symbolId = key2id(symbol.symbol);
 
     fillPainter.text = TextSpan(
       text: symbolFill(symbolId),
-      style: signWritingFillFamily.copyWith(
-        fontSize: size,
-        color: fillColor,
-      ),
+      style: signWritingFillFamily.copyWith(fontSize: size, color: fillColor),
     );
-
     linePainter.text = TextSpan(
       text: symbolLine(symbolId),
-      style: signWritingLinelFamily.copyWith(
-        fontSize: size,
-        color: lineColor,
-      ),
+      style: signWritingLinelFamily.copyWith(fontSize: size, color: lineColor),
     );
 
     fillPainter.layout();
     linePainter.layout();
 
-    // Paint the fill and line of the symbol onto the canvas
-    fillPainter.paint(canvas, ui.Offset(x, y));
-    linePainter.paint(canvas, ui.Offset(x, y));
+    // Fill first, line on top (matches Python's draw order).
+    fillPainter.paint(canvas, Offset(x, y));
+    linePainter.paint(canvas, Offset(x, y));
   }
 
-  // End recording the drawing commands and obtain a Picture
-  final picture = pictureRecorder.endRecording();
+  final picture = recorder.endRecording();
+  return picture.toImage(max(1, maxX - minX), max(1, maxY - minY));
+}
 
-  // Convert the Picture to an Image and then to ByteData
-  final img = await picture.toImage((maxX - minX).ceil(), (maxY - minY).ceil());
-  final data = await img.toByteData(format: ui.ImageByteFormat.png);
+Future<Uint8List> _encodePng(ui.Image image) async {
+  final data = await image.toByteData(format: ui.ImageByteFormat.png);
+  return data!.buffer.asUint8List();
+}
 
-  // Convert the ByteData to Uint8List representing the image
-  final bytes = data!.buffer.asUint8List();
-  return bytes;
+/// Converts a SignWriting FSW or SWU string into a PNG image.
+///
+/// Parameters:
+///   - fsw: the FSW string, or an SWU string (auto-detected and converted).
+///   - trustBox: if true, use the bounding box from the FSW data; if false,
+///     compute a tight box from the symbols' rendered sizes.
+///   - size: symbol font size (defaults to 30, the reference size).
+///   - lineColor / fillColor: line and fill colors.
+///
+/// Returns the PNG bytes, or an empty list for a sign with no symbols.
+Future<Uint8List> signwritingToImage(
+  String fsw, {
+  bool trustBox = true,
+  double size = 30.0,
+  Color lineColor = Colors.black,
+  Color fillColor = Colors.transparent,
+}) async {
+  final source = _isAscii(fsw) ? fsw : swu2fsw(fsw);
+  if (fswToSign(source).symbols.isEmpty) {
+    return Uint8List(0);
+  }
+  final image = await _renderSignImage(
+    source,
+    trustBox: trustBox,
+    size: size,
+    lineColor: lineColor,
+    fillColor: fillColor,
+  );
+  return _encodePng(image);
+}
+
+/// Lays out direction for [signwritingsToImage].
+enum SignWritingLayout { horizontal, vertical }
+
+/// Renders multiple FSW/SWU signs and combines them into a single PNG, laid
+/// out [direction]ally with a 20px gap and cross-axis centering (matches the
+/// Python `layout_signwriting`).
+Future<Uint8List> signwritingsToImage(
+  List<String> fsws, {
+  SignWritingLayout direction = SignWritingLayout.horizontal,
+  bool trustBox = true,
+  double size = 30.0,
+  Color lineColor = Colors.black,
+  Color fillColor = Colors.transparent,
+}) async {
+  if (fsws.isEmpty) return Uint8List(0);
+
+  final images = <ui.Image>[];
+  for (final fsw in fsws) {
+    images.add(
+      await _renderSignImage(
+        fsw,
+        trustBox: trustBox,
+        size: size,
+        lineColor: lineColor,
+        fillColor: fillColor,
+      ),
+    );
+  }
+
+  const gap = 20;
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder);
+  final paint = Paint();
+  int totalWidth;
+  int totalHeight;
+
+  if (direction == SignWritingLayout.vertical) {
+    final maxWidth = images.map((i) => i.width).reduce(max);
+    totalWidth = maxWidth;
+    totalHeight =
+        images.fold<int>(0, (s, i) => s + i.height) + gap * (images.length - 1);
+    int offset = 0;
+    for (final img in images) {
+      canvas.drawImage(
+        img,
+        Offset(((maxWidth - img.width) ~/ 2).toDouble(), offset.toDouble()),
+        paint,
+      );
+      offset += img.height + gap;
+    }
+  } else {
+    final maxHeight = images.map((i) => i.height).reduce(max);
+    totalHeight = maxHeight;
+    totalWidth =
+        images.fold<int>(0, (s, i) => s + i.width) + gap * (images.length - 1);
+    int offset = 0;
+    for (final img in images) {
+      canvas.drawImage(
+        img,
+        Offset(offset.toDouble(), ((maxHeight - img.height) ~/ 2).toDouble()),
+        paint,
+      );
+      offset += img.width + gap;
+    }
+  }
+
+  final combined = await recorder.endRecording().toImage(
+    max(1, totalWidth),
+    max(1, totalHeight),
+  );
+  return _encodePng(combined);
 }
