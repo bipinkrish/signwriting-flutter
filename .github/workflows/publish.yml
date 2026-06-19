@@ -1,13 +1,10 @@
 name: Publish to pub.dev
 
-# Publishes the package when a version tag like `v1.0.5` is pushed.
+# Publishes the package when a version tag like `v1.3.0` is pushed.
 #
 # One-time setup (pub.dev > admin > Automated publishing):
 #   enable "Publishing from GitHub Actions", set the repository and the
 #   tag pattern `v{{version}}`. No secrets are stored — auth uses OIDC.
-#
-# Note: the official dart-lang reusable workflow resolves with the Dart SDK
-# only, which fails on a Flutter-SDK dependency, so this uses a custom job.
 on:
   push:
     tags:
@@ -15,15 +12,6 @@ on:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
     permissions:
       id-token: write # required for OIDC authentication with pub.dev
-    steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-      - name: Install dependencies
-        run: flutter pub get
-      - name: Publish
-        run: flutter pub publish --force
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
