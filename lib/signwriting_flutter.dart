@@ -192,8 +192,8 @@ Future<Uint8List> signwritingsToImage(
   }
 
   final combined = await recorder.endRecording().toImage(
-    max(1, totalWidth),
-    max(1, totalHeight),
-  );
+        max(1, totalWidth),
+        max(1, totalHeight),
+      );
   return _encodePng(combined);
 }
